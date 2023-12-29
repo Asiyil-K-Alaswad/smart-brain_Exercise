@@ -1,6 +1,5 @@
 import React, { Component } from 'react';
-// import Particles from 'react-particles-js';
-import ParticlesBg from 'particles-bg'
+import ParticlesBG from './components/ParticleBG/ParticlesBG';
 import FaceRecognition from './components/FaceRecognition/FaceRecognition';
 import Navigation from './components/Navigation/Navigation';
 import Signin from './components/Signin/Signin';
@@ -13,7 +12,7 @@ import './App.css';
 const initialState = {
   input: '',
   imageUrl: '',
-  box: {},
+  boxes: [],
   route: 'signin',
   isSignedIn: false,
   user: {
@@ -43,20 +42,26 @@ class App extends Component {
   }
 
   calculateFaceLocation = (data) => {
+    const clarifaiFaces = data.outputs[0].data.regions;
     const clarifaiFace = data.outputs[0].data.regions[0].region_info.bounding_box;
     const image = document.getElementById('inputimage');
     const width = Number(image.width);
     const height = Number(image.height);
-    return {
-      leftCol: clarifaiFace.left_col * width,
-      topRow: clarifaiFace.top_row * height,
-      rightCol: width - (clarifaiFace.right_col * width),
-      bottomRow: height - (clarifaiFace.bottom_row * height)
-    }
+
+    const bounding_Boxes = clarifaiFaces.map((face) => {
+      return {
+        leftCol: face.region_info.bounding_box.left_col * width,
+        topRow: face.region_info.bounding_box.top_row * height,
+        rightCol: width - (face.region_info.bounding_box.right_col * width),
+        bottomRow: height - (face.region_info.bounding_box.bottom_row * height)
+      }
+    })
+    return bounding_Boxes;
+
   }
 
-  displayFaceBox = (box) => {
-    this.setState({box: box});
+  displayFaceBox = (boxes) => {
+    this.setState({boxes: boxes});
   }
 
   onInputChange = (event) => {
@@ -104,10 +109,10 @@ class App extends Component {
   }
 
   render() {
-    const { isSignedIn, imageUrl, route, box } = this.state;
+    const { isSignedIn, imageUrl, route, boxes } = this.state;
     return (
       <div className="App">
-        <ParticlesBg type="circle" bg={true} />
+        <ParticlesBG />
         <Navigation isSignedIn={isSignedIn} onRouteChange={this.onRouteChange} />
         { route === 'home'
           ? <div>
@@ -120,7 +125,7 @@ class App extends Component {
                 onInputChange={this.onInputChange}
                 onButtonSubmit={this.onButtonSubmit}
               />
-              <FaceRecognition box={box} imageUrl={imageUrl} />
+              <FaceRecognition boxes={boxes} imageUrl={imageUrl} />
             </div>
           : (
              route === 'signin'
